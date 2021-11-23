@@ -1,0 +1,12 @@
+[programs.localnet]
+governanceregistry = "govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9"
+
+[governanceregistry]
+url = "https://github.com/cardinal-consensus/spl-governance-registry"
+
+[provider]
+cluster = "localnet"
+wallet = "/Users/jbogle/.config/solana/id.json"
+
+[scripts]
+test = "mocha -t 1000000 tests/"
