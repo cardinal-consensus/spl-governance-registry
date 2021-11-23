@@ -75,7 +75,7 @@ pub struct TransferVerificationAuthority<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContextAccount>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key)]
+    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
     pub new_authority: Signer<'info>,
 }
@@ -103,7 +103,7 @@ pub struct VerifyInstance<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContextAccount>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key)]
+    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
@@ -114,7 +114,7 @@ pub struct RemoveInstance<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContextAccount>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key)]
+    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 

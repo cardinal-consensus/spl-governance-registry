@@ -134,7 +134,7 @@ describe("Registry Tests", () => {
       await program.account.governanceProgramAccount.fetch(seededPubkey);
       throw Error("Expected to get an error");
     } catch (e) {
-      // TODO check the error type somehow
+      // TODO check the error type
     }
   });
 
@@ -201,7 +201,38 @@ describe("Registry Tests", () => {
       );
       throw Error("Expected to get an error");
     } catch (e) {
-      // TODO check the error type somehow
+      // TODO check the error type
+    }
+  });
+
+  it("Cannot verify instance if not authority", async () => {
+    const [registryContext] = await web3.PublicKey.findProgramAddress(
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      program.programId
+    );
+
+    const [seededPubkey] = await web3.PublicKey.findProgramAddress(
+      [
+        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        programInstance.publicKey.toBuffer(),
+      ],
+      program.programId
+    );
+
+    const nonAuthority = web3.Keypair.generate();
+
+    try {
+      const tx = await program.rpc.verifyProgramInstance({
+        accounts: {
+          programInstance: seededPubkey,
+          registryContext,
+          authority: nonAuthority.publicKey,
+        },
+        signers: [nonAuthority],
+      });
+      throw Error("Expected to get an error");
+    } catch (e) {
+      assert.equal(e.code, 300);
     }
   });
 });
