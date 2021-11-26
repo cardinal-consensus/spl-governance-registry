@@ -4,7 +4,7 @@ use anchor_lang::AccountsClose;
 declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
 
 #[program]
-pub mod governanceregistry {
+pub mod verifiedregistry {
     use super::*;
 
     pub fn init(ctx: Context<Init>, _ix: InitIx) -> ProgramResult {
@@ -19,22 +19,28 @@ pub mod governanceregistry {
         Ok(())
     }
     
-    pub fn register_program_instance(ctx: Context<RegisterInstance>, ix: RegisterInstanceIx) -> ProgramResult {
-        let program_instance = &mut ctx.accounts.program_instance;
-        program_instance.name = ix.name;
-        program_instance.program_address = ix.program_address;
-        program_instance.is_verified = false; // default to false
+    pub fn register_entry(ctx: Context<RegisterEntry>, ix: RegisterEntryIx) -> ProgramResult {
+        let clock = Clock::get().unwrap();
+        let timestamp = clock.unix_timestamp;
+        let entry = &mut ctx.accounts.entry;
+        entry.address = ix.address;
+        entry.additional_data_url = ix.additional_data_url;
+        entry.created_at = timestamp;
+        entry.updated_at = timestamp;
         Ok(())
     }
 
-    pub fn verify_program_instance(ctx: Context<VerifyInstance>) -> ProgramResult {
-        let program_instance = &mut ctx.accounts.program_instance;
-        program_instance.is_verified = true;
+    pub fn update_entry(ctx: Context<UpdateEntry>, ix: UpdateEntryIx) -> ProgramResult {
+        let clock = Clock::get().unwrap();
+        let timestamp = clock.unix_timestamp;
+        let entry = &mut ctx.accounts.entry;
+        entry.additional_data_url = ix.additional_data_url;
+        entry.updated_at = timestamp;
         Ok(())
     }
 
-    pub fn remove_program_instance(ctx: Context<RemoveInstance>) -> ProgramResult {
-        ctx.accounts.program_instance.close(ctx.accounts.authority.to_account_info()).unwrap();
+    pub fn remove_entry(ctx: Context<RemoveEntry>) -> ProgramResult {
+        ctx.accounts.entry.close(ctx.accounts.authority.to_account_info()).unwrap();
         Ok(())
     }
 }
@@ -47,11 +53,16 @@ pub struct InitIx {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct RegisterInstanceIx {
-    pub name: String,
-    pub program_address: Pubkey,
+pub struct RegisterEntryIx {
+    pub address: Pubkey,
+    pub additional_data_url: String,
     pub bump: u8,
     pub seed: [u8; 32],
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct UpdateEntryIx {
+    pub additional_data_url: String,
 }
 
 ///////////////// Contexts /////////////////
@@ -61,7 +72,8 @@ pub struct Init<'info> {
     #[account(
         init,
         payer = authority,
-        space = 64,
+        // extra space for future upgrades
+        space = 128,
         seeds = [b"registry-context".as_ref()],
         bump = ix.bump,
     )]
@@ -81,39 +93,42 @@ pub struct TransferVerificationAuthority<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(ix: RegisterInstanceIx)]
-pub struct RegisterInstance<'info> {
+#[instruction(ix: RegisterEntryIx)]
+pub struct RegisterEntry<'info> {
+    #[account(mut)]
+    pub registry_context: Account<'info, RegistryContextAccount>,
     #[account(
         init,
         payer = authority,
-        space = 128,
+        // extra space for future upgrades
+        space = 256,
+        // TODO constraint seed == ix.address? or just use address as seed?
         seeds = [b"governance-program".as_ref(), ix.seed.as_ref()],
         bump = ix.bump,
     )]
-    pub program_instance: Account<'info, GovernanceProgramAccount>,
-    // permissionless authority to add instances
+    pub entry: Account<'info, EntryData>,
+    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
 #[derive(Accounts)]
-pub struct VerifyInstance<'info> {
-    #[account(mut)]
-    pub program_instance: Account<'info, GovernanceProgramAccount>,
-    // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
+pub struct UpdateEntry<'info> {
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContextAccount>,
+    #[account(mut)]
+    pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
-pub struct RemoveInstance<'info> {
-    #[account(mut)]
-    pub program_instance: Account<'info, GovernanceProgramAccount>,
+pub struct RemoveEntry<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContextAccount>,
+    #[account(mut)]
+    pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
@@ -128,10 +143,11 @@ pub struct RegistryContextAccount{
 
 #[account]
 #[derive(Default)]
-pub struct GovernanceProgramAccount {
-    pub name: String,
-    pub program_address: Pubkey,
-    pub is_verified: bool,
+pub struct EntryData {
+    pub address: Pubkey,
+    pub additional_data_url: String,
+    pub created_at: i64,
+    pub updated_at: i64,
 }
 
 #[error]

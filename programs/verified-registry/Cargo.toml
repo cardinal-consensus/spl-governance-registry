@@ -1,0 +1,18 @@
+[package]
+name = "verifiedregistry"
+version = "0.1.0"
+description = "spl governance program registry"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "verifiedregistry"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.18.0"
