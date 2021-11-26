@@ -23,7 +23,8 @@ pub mod permissionless_verifiable_registry {
     pub fn add_entry(ctx: Context<AddEntry>, ix: AddEntryIx) -> ProgramResult {
         let entry = &mut ctx.accounts.entry;
         entry.address = ix.address;
-        entry.data_url = ix.data_url;
+        entry.data = ix.data;
+        entry.schema = ix.schema;
         entry.creator = *ctx.accounts.creator.key;
         entry.created_at = Clock::get().unwrap().unix_timestamp;
         entry.is_verified = false; // default to false
@@ -55,8 +56,9 @@ pub struct InitIx {
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct AddEntryIx {
     pub bump: u8,
-    pub data_url: String,
     pub address: Pubkey,
+    pub schema: u8,
+    pub data: String,
 }
 
 ///////////////// Contexts /////////////////
@@ -97,7 +99,7 @@ pub struct AddEntry<'info> {
         init,
         payer = creator,
         // extra space for future upgrades
-        space = 256,
+        space = 1024,
         seeds = [registry_context.entry_seed.as_ref(), ix.address.as_ref()],
         bump = ix.bump,
     )]
@@ -140,15 +142,14 @@ pub struct RegistryContext{
 }
 
 #[account]
-#[derive(Default)]
 pub struct EntryData {
     pub address: Pubkey,
-    // only data here is just a URL. JSON must contain a schema version
-    pub data_url: String,
     pub creator: Pubkey,
+    pub created_at: i64,
     pub is_verified: bool,
     pub verified_at: i64,
-    pub created_at: i64,
+    pub schema: u8,
+    pub data: String,
 }
 
 ///////////////// ERRORS /////////////////
