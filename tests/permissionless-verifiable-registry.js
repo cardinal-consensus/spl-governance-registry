@@ -3,14 +3,14 @@ const web3 = require("@solana/web3.js");
 const assert = require("assert");
 
 const REGISTRY_CONTEXT_SEED = "registry-context";
-const PDA_PREFIX = "governance-program";
+const ENTRY_SEED = "governance-program";
 
 describe("Registry Tests", () => {
   const provider = anchor.Provider.env();
   anchor.setProvider(provider);
-  const program = anchor.workspace.Governanceregistry;
+  const program = anchor.workspace.PermissionlessVerifiableRegistry;
   const programInstance = web3.Keypair.generate();
-  const testName = "test name";
+  const testData = "https://kforkofrk";
 
   it("Initializes the registry", async () => {
     const [registryContext, bump] = await web3.PublicKey.findProgramAddress(
@@ -19,7 +19,7 @@ describe("Registry Tests", () => {
     );
 
     const tx = await program.rpc.init(
-      { bump },
+      { bump, entrySeed: ENTRY_SEED, permissionless_add: true },
       {
         accounts: {
           registryContext,
@@ -29,54 +29,56 @@ describe("Registry Tests", () => {
       }
     );
     console.log("Your transaction signature", tx);
-    const data = await program.account.registryContextAccount.fetch(
-      registryContext
-    );
+    const data = await program.account.registryContext.fetch(registryContext);
     console.log("Found data: ", data);
     assert.equal(
       data.authority.toBase58(),
       provider.wallet.publicKey.toBase58()
     );
+    assert.equal(data.entrySeed, ENTRY_SEED);
   });
 
-  it("Add instance", async () => {
+  it("Add entry", async () => {
+    const [registryContext] = await web3.PublicKey.findProgramAddress(
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      program.programId
+    );
+
     const [seededPubkey, bump] = await web3.PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        anchor.utils.bytes.utf8.encode(ENTRY_SEED),
         programInstance.publicKey.toBuffer(),
       ],
       program.programId
     );
 
-    const tx = await program.rpc.registerProgramInstance(
+    const tx = await program.rpc.addEntry(
       {
-        name: testName,
-        programAddress: programInstance.publicKey,
         bump,
-        seed: programInstance.publicKey.toBuffer(),
+        data: testData,
+        address: programInstance.publicKey,
       },
       {
         accounts: {
-          programInstance: seededPubkey,
-          authority: provider.wallet.publicKey,
+          registryContext,
+          entry: seededPubkey,
+          creator: provider.wallet.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
         },
       }
     );
     console.log("Your transaction signature", tx);
-    const data = await program.account.governanceProgramAccount.fetch(
-      seededPubkey
-    );
-    console.log("Found data: ", data);
-    assert.equal(data.name, testName);
+    const entry = await program.account.entryData.fetch(seededPubkey);
+    console.log("Found data: ", entry);
+    assert.equal(entry.data, testData);
     assert.equal(
-      data.programAddress.toBase58(),
+      entry.address.toBase58(),
       programInstance.publicKey.toBase58()
     );
-    assert.equal(data.isVerified, false);
+    assert.equal(entry.isVerified, false);
   });
 
-  it("Verify an instance", async () => {
+  it("Verify an entry", async () => {
     const [registryContext] = await web3.PublicKey.findProgramAddress(
       [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
       program.programId
@@ -84,32 +86,30 @@ describe("Registry Tests", () => {
 
     const [seededPubkey] = await web3.PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        anchor.utils.bytes.utf8.encode(ENTRY_SEED),
         programInstance.publicKey.toBuffer(),
       ],
       program.programId
     );
-    const tx = await program.rpc.verifyProgramInstance({
+    const tx = await program.rpc.verifyEntry({
       accounts: {
-        programInstance: seededPubkey,
         registryContext,
+        entry: seededPubkey,
         authority: provider.wallet.publicKey,
       },
     });
     console.log("Your transaction signature", tx);
-    const data = await program.account.governanceProgramAccount.fetch(
-      seededPubkey
-    );
-    console.log("Found data: ", data);
-    assert.equal(data.name, testName);
+    const entry = await program.account.entryData.fetch(seededPubkey);
+    console.log("Found data: ", entry);
+    assert.equal(entry.data, testData);
     assert.equal(
-      data.programAddress.toBase58(),
+      entry.address.toBase58(),
       programInstance.publicKey.toBase58()
     );
-    assert.equal(data.isVerified, true);
+    assert.equal(entry.isVerified, true);
   });
 
-  it("Remove an instance", async () => {
+  it("Remove an entry", async () => {
     const [registryContext] = await web3.PublicKey.findProgramAddress(
       [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
       program.programId
@@ -117,21 +117,21 @@ describe("Registry Tests", () => {
 
     const [seededPubkey] = await web3.PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        anchor.utils.bytes.utf8.encode(ENTRY_SEED),
         programInstance.publicKey.toBuffer(),
       ],
       program.programId
     );
-    const tx = await program.rpc.removeProgramInstance({
+    const tx = await program.rpc.removeEntry({
       accounts: {
         registryContext,
-        programInstance: seededPubkey,
+        entry: seededPubkey,
         authority: provider.wallet.publicKey,
       },
     });
     console.log("Your transaction signature", tx);
     try {
-      await program.account.governanceProgramAccount.fetch(seededPubkey);
+      await program.account.entryData.fetch(seededPubkey);
       throw Error("Expected to get an error");
     } catch (e) {
       // TODO check the error type
@@ -139,61 +139,71 @@ describe("Registry Tests", () => {
   });
 
   it("Add instance back", async () => {
+    const data = "https://fkrok";
+    const [registryContext] = await web3.PublicKey.findProgramAddress(
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      program.programId
+    );
+
     const [seededPubkey, bump] = await web3.PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        anchor.utils.bytes.utf8.encode(ENTRY_SEED),
         programInstance.publicKey.toBuffer(),
       ],
       program.programId
     );
 
-    const tx = await program.rpc.registerProgramInstance(
+    const tx = await program.rpc.addEntry(
       {
-        name: "test2",
-        programAddress: programInstance.publicKey,
         bump,
-        seed: programInstance.publicKey.toBuffer(),
+        data,
+        address: programInstance.publicKey,
       },
       {
         accounts: {
-          programInstance: seededPubkey,
-          authority: provider.wallet.publicKey,
+          registryContext,
+          entry: seededPubkey,
+          creator: provider.wallet.publicKey,
           systemProgram: anchor.web3.SystemProgram.programId,
         },
       }
     );
     console.log("Your transaction signature", tx);
-    const data = await program.account.governanceProgramAccount.fetch(
-      seededPubkey
-    );
-    console.log("Found data: ", data);
-    assert.equal(data.name, "test2");
+    const entry = await program.account.entryData.fetch(seededPubkey);
+    console.log("Found data: ", entry);
+    assert.equal(entry.data, data);
     assert.equal(
-      data.programAddress.toBase58(),
+      entry.address.toBase58(),
       programInstance.publicKey.toBase58()
     );
-    assert.equal(data.isVerified, false);
+    assert.equal(entry.isVerified, false);
   });
 
-  it("Cannot add instance again", async () => {
+  it("Cannot add entry again", async () => {
+    const data = "https://fkrok";
+    const [registryContext] = await web3.PublicKey.findProgramAddress(
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      program.programId
+    );
+
     const [seededPubkey, bump] = await web3.PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        anchor.utils.bytes.utf8.encode(ENTRY_SEED),
         programInstance.publicKey.toBuffer(),
       ],
       program.programId
     );
     try {
-      const tx = await program.rpc.registerProgramInstance(
+      const tx = await program.rpc.addEntry(
         {
-          name: "test3",
-          programAddress: programInstance.publicKey,
           bump,
-          seed: programInstance.publicKey.toBuffer(),
+          data,
+          address: programInstance.publicKey,
         },
         {
           accounts: {
-            programInstance: seededPubkey,
+            registryContext,
+            entry: seededPubkey,
             authority: provider.wallet.publicKey,
             systemProgram: anchor.web3.SystemProgram.programId,
           },
@@ -205,7 +215,7 @@ describe("Registry Tests", () => {
     }
   });
 
-  it("Cannot verify instance if not authority", async () => {
+  it("Cannot verify entry if not authority", async () => {
     const [registryContext] = await web3.PublicKey.findProgramAddress(
       [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
       program.programId
@@ -213,7 +223,7 @@ describe("Registry Tests", () => {
 
     const [seededPubkey] = await web3.PublicKey.findProgramAddress(
       [
-        anchor.utils.bytes.utf8.encode(PDA_PREFIX),
+        anchor.utils.bytes.utf8.encode(ENTRY_SEED),
         programInstance.publicKey.toBuffer(),
       ],
       program.programId
@@ -222,10 +232,10 @@ describe("Registry Tests", () => {
     const nonAuthority = web3.Keypair.generate();
 
     try {
-      const tx = await program.rpc.verifyProgramInstance({
+      const tx = await program.rpc.verifyEntry({
         accounts: {
-          programInstance: seededPubkey,
           registryContext,
+          entry: seededPubkey,
           authority: nonAuthority.publicKey,
         },
         signers: [nonAuthority],

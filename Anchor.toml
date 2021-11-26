@@ -1,7 +1,7 @@
 [programs.localnet]
-governanceregistry = "govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9"
+permissionless_verifiable_registry = "govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9"
 
-[governanceregistry]
+[permissionless_verifiable_registry]
 url = "https://github.com/cardinal-consensus/spl-governance-registry"
 
 [provider]
