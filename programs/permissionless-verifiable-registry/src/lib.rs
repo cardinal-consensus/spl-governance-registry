@@ -49,6 +49,7 @@ pub mod permissionless_verifiable_registry {
 pub struct InitIx {
     pub bump: u8,
     pub entry_seed: String,
+    pub permissionless_add: bool,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
@@ -101,7 +102,7 @@ pub struct AddEntry<'info> {
         bump = ix.bump,
     )]
     pub entry: Account<'info, EntryData>,
-    // permissionless authority to add entries
+    #[account(constraint = registry_context.permissionless_add || (registry_context.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
@@ -135,6 +136,7 @@ pub struct RemoveEntry<'info> {
 pub struct RegistryContext{
     pub authority: Pubkey,
     pub entry_seed: String,
+    pub permissionless_add: bool,
 }
 
 #[account]
