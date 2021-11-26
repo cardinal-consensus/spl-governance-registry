@@ -14,7 +14,7 @@ pub mod permissionless_verifiable_registry {
         Ok(())
     }
 
-    pub fn transfer_authority(ctx: Context<TransferVerificationAuthority>) -> ProgramResult {
+    pub fn transfer_authority(ctx: Context<TransferAuthority>) -> ProgramResult {
         let registry_context = &mut ctx.accounts.registry_context;
         registry_context.authority = *ctx.accounts.new_authority.key;
         Ok(())
@@ -76,7 +76,7 @@ pub struct Init<'info> {
 }
 
 #[derive(Accounts)]
-pub struct TransferVerificationAuthority<'info> {
+pub struct TransferAuthority<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContext>,
