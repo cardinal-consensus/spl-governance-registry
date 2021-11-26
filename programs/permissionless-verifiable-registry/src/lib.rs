@@ -59,6 +59,7 @@ pub struct AddEntryIx {
 }
 
 ///////////////// Contexts /////////////////
+
 #[derive(Accounts)]
 #[instruction(ix: InitIx)]
 pub struct Init<'info> {
@@ -147,6 +148,8 @@ pub struct EntryData {
     pub verified_at: i64,
     pub created_at: i64,
 }
+
+///////////////// ERRORS /////////////////
 
 #[error]
 pub enum ErrorCode {
