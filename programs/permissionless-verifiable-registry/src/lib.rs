@@ -109,22 +109,22 @@ pub struct AddEntry<'info> {
 
 #[derive(Accounts)]
 pub struct VerifyEntry<'info> {
-    #[account(mut)]
-    pub entry: Account<'info, EntryData>,
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContext>,
+    #[account(mut)]
+    pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct RemoveEntry<'info> {
-    #[account(mut)]
-    pub entry: Account<'info, EntryData>,
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContext>,
+    #[account(mut)]
+    pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_context.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
