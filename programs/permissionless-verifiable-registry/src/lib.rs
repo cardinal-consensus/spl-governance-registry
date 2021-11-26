@@ -19,7 +19,7 @@ pub mod governanceregistry {
         Ok(())
     }
     
-    pub fn register_entry(ctx: Context<RegisterEntry>, ix: RegisterEntryIx) -> ProgramResult {
+    pub fn add_entry(ctx: Context<AddEntry>, ix: AddEntryIx) -> ProgramResult {
         let clock = Clock::get().unwrap();
         let timestamp = clock.unix_timestamp;
         let entry = &mut ctx.accounts.entry;
@@ -54,7 +54,7 @@ pub struct InitIx {
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct RegisterEntryIx {
+pub struct AddEntryIx {
     pub name: String,
     pub program_address: Pubkey,
     pub bump: u8,
@@ -89,8 +89,8 @@ pub struct TransferVerificationAuthority<'info> {
 }
 
 #[derive(Accounts)]
-#[instruction(ix: RegisterEntryIx)]
-pub struct RegisterEntry<'info> {
+#[instruction(ix: AddEntryIx)]
+pub struct AddEntry<'info> {
     #[account(
         init,
         payer = authority,
