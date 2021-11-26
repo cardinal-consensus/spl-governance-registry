@@ -4,7 +4,7 @@ use anchor_lang::AccountsClose;
 declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
 
 #[program]
-pub mod verifiedregistry {
+pub mod verified_registry {
     use super::*;
 
     pub fn init(ctx: Context<Init>, _ix: InitIx) -> ProgramResult {

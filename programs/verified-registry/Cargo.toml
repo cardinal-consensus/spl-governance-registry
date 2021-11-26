@@ -1,12 +1,12 @@
 [package]
-name = "verifiedregistry"
+name = "verified_registry"
 version = "0.1.0"
-description = "spl governance program registry"
+description = "Solana verified registry"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "verifiedregistry"
+name = "verified_registry"
 
 [features]
 no-entrypoint = []

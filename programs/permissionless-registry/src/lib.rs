@@ -4,7 +4,7 @@ use anchor_lang::AccountsClose;
 declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
 
 #[program]
-pub mod permissionlessregistry {
+pub mod permissionless_registry {
     use super::*;
 
     pub fn add_entry(ctx: Context<AddEntry>, ix: AddEntryIx) -> ProgramResult {

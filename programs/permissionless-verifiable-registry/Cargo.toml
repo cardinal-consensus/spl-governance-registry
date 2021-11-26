@@ -1,12 +1,12 @@
 [package]
-name = "governanceregistry"
+name = "permissionless_verifiable_registry"
 version = "0.1.0"
-description = "spl governance program registry"
+description = "Solana permissionless, verifiable registry"
 edition = "2018"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "governanceregistry"
+name = "permissionless_verifiable_registry"
 
 [features]
 no-entrypoint = []
