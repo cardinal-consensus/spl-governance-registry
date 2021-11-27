@@ -56,6 +56,7 @@ describe("Registry Tests", () => {
       {
         bump,
         data: testData,
+        schema: 0,
         address: programInstance.publicKey,
       },
       {
