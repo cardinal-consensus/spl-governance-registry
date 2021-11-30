@@ -1,0 +1,18 @@
+[package]
+name = "permissionless_verifiable_schema_registry"
+version = "0.1.0"
+description = "Solana permissionless, verifiable registry"
+edition = "2018"
+
+[lib]
+crate-type = ["cdylib", "lib"]
+name = "permissionless_verifiable_schema_registry"
+
+[features]
+no-entrypoint = []
+no-idl = []
+cpi = ["no-entrypoint"]
+default = []
+
+[dependencies]
+anchor-lang = "0.18.0"
