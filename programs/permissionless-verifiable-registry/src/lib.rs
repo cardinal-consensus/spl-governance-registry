@@ -38,6 +38,12 @@ pub mod permissionless_verifiable_registry {
         Ok(())
     }
 
+    pub fn unverify_entry(ctx: Context<UnverifyEntry>) -> ProgramResult {
+        let entry = &mut ctx.accounts.entry;
+        entry.is_verified = false;
+        Ok(())
+    }
+
     pub fn remove_entry(ctx: Context<RemoveEntry>) -> ProgramResult {
         ctx.accounts.entry.close(ctx.accounts.authority.to_account_info()).unwrap();
         Ok(())
@@ -111,6 +117,17 @@ pub struct AddEntry<'info> {
 
 #[derive(Accounts)]
 pub struct VerifyEntry<'info> {
+    // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
+    #[account(mut)]
+    pub registry_context: Account<'info, RegistryContext>,
+    #[account(mut)]
+    pub entry: Account<'info, EntryData>,
+    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
+    pub authority: Signer<'info>,
+}
+
+#[derive(Accounts)]
+pub struct UnverifyEntry<'info> {
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
     pub registry_context: Account<'info, RegistryContext>,
