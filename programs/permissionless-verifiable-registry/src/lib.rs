@@ -8,15 +8,15 @@ pub mod permissionless_verifiable_registry {
     use super::*;
 
     pub fn init(ctx: Context<Init>, ix: InitIx) -> ProgramResult {
-        let registry_context = &mut ctx.accounts.registry_context;
-        registry_context.authority = *ctx.accounts.authority.key;
-        registry_context.entry_seed = ix.entry_seed;
+        let registry_config = &mut ctx.accounts.registry_config;
+        registry_config.authority = *ctx.accounts.authority.key;
+        registry_config.entry_seed = ix.entry_seed;
         Ok(())
     }
 
     pub fn transfer_authority(ctx: Context<TransferAuthority>) -> ProgramResult {
-        let registry_context = &mut ctx.accounts.registry_context;
-        registry_context.authority = *ctx.accounts.new_authority.key;
+        let registry_config = &mut ctx.accounts.registry_config;
+        registry_config.authority = *ctx.accounts.new_authority.key;
         Ok(())
     }
     
@@ -24,7 +24,7 @@ pub mod permissionless_verifiable_registry {
         let entry = &mut ctx.accounts.entry;
         entry.address = ix.address;
         entry.data = ix.data;
-        entry.schema = ix.schema;
+        entry.schema_version = ix.schema_version;
         entry.creator = *ctx.accounts.creator.key;
         entry.created_at = Clock::get().unwrap().unix_timestamp;
         entry.is_verified = false; // default to false
@@ -63,7 +63,7 @@ pub struct InitIx {
 pub struct AddEntryIx {
     pub bump: u8,
     pub address: Pubkey,
-    pub schema: u8,
+    pub schema_version: u8,
     pub data: String,
 }
 
@@ -77,10 +77,10 @@ pub struct Init<'info> {
         payer = authority,
         // extra space for future upgrades
         space = 128,
-        seeds = [b"registry-context".as_ref()],
+        seeds = [b"registry-config".as_ref()],
         bump = ix.bump,
     )]
-    pub registry_context: Account<'info, RegistryContext>,
+    pub registry_config: Account<'info, RegistryConfig>,
     pub authority: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
@@ -89,8 +89,8 @@ pub struct Init<'info> {
 pub struct TransferAuthority<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_context: Account<'info, RegistryContext>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
+    pub registry_config: Account<'info, RegistryConfig>,
+    #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
     pub new_authority: Signer<'info>,
 }
@@ -100,17 +100,17 @@ pub struct TransferAuthority<'info> {
 pub struct AddEntry<'info> {
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_context: Account<'info, RegistryContext>,
+    pub registry_config: Account<'info, RegistryConfig>,
     #[account(
         init,
         payer = creator,
         // extra space for future upgrades
         space = 1024,
-        seeds = [registry_context.entry_seed.as_ref(), ix.address.as_ref()],
+        seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()],
         bump = ix.bump,
     )]
     pub entry: Account<'info, EntryData>,
-    #[account(constraint = registry_context.permissionless_add || (registry_context.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
+    #[account(constraint = registry_config.permissionless_add || (registry_config.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
@@ -119,10 +119,10 @@ pub struct AddEntry<'info> {
 pub struct VerifyEntry<'info> {
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_context: Account<'info, RegistryContext>,
+    pub registry_config: Account<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: Account<'info, EntryData>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
+    #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
@@ -130,10 +130,10 @@ pub struct VerifyEntry<'info> {
 pub struct UnverifyEntry<'info> {
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_context: Account<'info, RegistryContext>,
+    pub registry_config: Account<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: Account<'info, EntryData>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
+    #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
@@ -141,10 +141,10 @@ pub struct UnverifyEntry<'info> {
 pub struct RemoveEntry<'info> {
     // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_context: Account<'info, RegistryContext>,
+    pub registry_config: Account<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: Account<'info, EntryData>,
-    #[account(constraint = registry_context.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
+    #[account(constraint = registry_config.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
@@ -152,7 +152,7 @@ pub struct RemoveEntry<'info> {
 
 #[account]
 #[derive(Default)]
-pub struct RegistryContext{
+pub struct RegistryConfig{
     pub authority: Pubkey,
     pub entry_seed: String,
     pub permissionless_add: bool,
@@ -165,7 +165,7 @@ pub struct EntryData {
     pub created_at: i64,
     pub is_verified: bool,
     pub verified_at: i64,
-    pub schema: u8,
+    pub schema_version: u8,
     pub data: String,
 }
 
