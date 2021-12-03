@@ -2,7 +2,7 @@ const anchor = require("@project-serum/anchor");
 const web3 = require("@solana/web3.js");
 const assert = require("assert");
 
-const REGISTRY_CONTEXT_SEED = "registry-config";
+const REGISTRY_CONFIG_SEED = "registry-config";
 const ENTRY_SEED = "governance-program";
 
 describe("Registry Tests", () => {
@@ -14,7 +14,7 @@ describe("Registry Tests", () => {
 
   it("Initializes the registry", async () => {
     const [registryConfig, bump] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 
@@ -40,7 +40,7 @@ describe("Registry Tests", () => {
 
   it("Add entry", async () => {
     const [registryConfig] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 
@@ -81,7 +81,7 @@ describe("Registry Tests", () => {
 
   it("Verify an entry", async () => {
     const [registryConfig] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 
@@ -112,7 +112,7 @@ describe("Registry Tests", () => {
 
   it("Remove an entry", async () => {
     const [registryConfig] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 
@@ -142,7 +142,7 @@ describe("Registry Tests", () => {
   it("Add entry back", async () => {
     const data = "https://fkrok";
     const [registryConfig] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 
@@ -183,7 +183,7 @@ describe("Registry Tests", () => {
   it("Cannot add entry again", async () => {
     const data = "https://fkrok";
     const [registryConfig] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 
@@ -218,7 +218,7 @@ describe("Registry Tests", () => {
 
   it("Cannot verify entry if not authority", async () => {
     const [registryConfig] = await web3.PublicKey.findProgramAddress(
-      [anchor.utils.bytes.utf8.encode(REGISTRY_CONTEXT_SEED)],
+      [anchor.utils.bytes.utf8.encode(REGISTRY_CONFIG_SEED)],
       program.programId
     );
 

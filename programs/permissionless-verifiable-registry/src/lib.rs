@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
-declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
+declare_id!("tkJqbNU3dk3eCwtT4EjSFisxza8JcuKSbDNbTZDQv76");
 
 #[program]
 pub mod permissionless_verifiable_registry {
@@ -98,9 +98,8 @@ pub struct TransferAuthority<'info> {
 #[derive(Accounts)]
 #[instruction(ix: AddEntryIx)]
 pub struct AddEntry<'info> {
-    // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_config: Account<'info, RegistryConfig>,
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(
         init,
         payer = creator,
@@ -117,9 +116,8 @@ pub struct AddEntry<'info> {
 
 #[derive(Accounts)]
 pub struct VerifyEntry<'info> {
-    // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_config: Account<'info, RegistryConfig>,
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
@@ -128,9 +126,8 @@ pub struct VerifyEntry<'info> {
 
 #[derive(Accounts)]
 pub struct UnverifyEntry<'info> {
-    // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_config: Account<'info, RegistryConfig>,
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
@@ -139,9 +136,8 @@ pub struct UnverifyEntry<'info> {
 
 #[derive(Accounts)]
 pub struct RemoveEntry<'info> {
-    // TODO constraint this is the singleton registry context address owned by this instance? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_config: Account<'info, RegistryConfig>,
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: Account<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]

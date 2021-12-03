@@ -1,0 +1,10 @@
+{
+  "chainId": 0,
+  "address": "string",
+  "symbol": "string",
+  "name": "string",
+  "decimals": 0,
+  "logoURI": "string",
+  "tags": ["string"],
+  "extensions": { "string": "string" }
+}
