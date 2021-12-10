@@ -32,6 +32,13 @@ pub mod governance_registry {
         Ok(())
     }
 
+    pub fn update_entry(ctx: Context<UpdateEntry>, ix: UpdateEntryIx) -> ProgramResult {
+        let entry = &mut ctx.accounts.entry;
+        entry.data = ix.data;
+        entry.is_verified = false; // default to false
+        Ok(())
+    }
+
     pub fn verify_entry(ctx: Context<VerifyEntry>) -> ProgramResult {
         let entry = &mut ctx.accounts.entry;
         entry.is_verified = true;
@@ -66,6 +73,11 @@ pub struct AddEntryIx {
     pub bump: u8,
     pub address: Pubkey,
     pub schema_version: u8,
+    pub data: Realm,
+}
+
+#[derive(AnchorSerialize, AnchorDeserialize)]
+pub struct UpdateEntryIx {
     pub data: Realm,
 }
 
@@ -112,6 +124,22 @@ pub struct AddEntry<'info> {
     pub entry: ProgramAccount<'info, Entry>,
     #[account(constraint = registry_config.permissionless_add || (registry_config.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
     pub creator: Signer<'info>,
+    pub system_program: Program<'info, System>,
+}
+
+#[derive(Accounts)]
+#[instruction(ix: UpdateEntryIx)]
+pub struct UpdateEntry<'info> {
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
+    #[account(mut)]
+    pub entry: ProgramAccount<'info, Entry>,
+    #[account(constraint =
+        registry_config.permissionless_add
+        || (registry_config.authority == *updater.to_account_info().key)
+        || (entry.creator == *updater.to_account_info().key)
+        @ ErrorCode::InsufficientAuthority)]
+    pub updater: Signer<'info>,
     pub system_program: Program<'info, System>,
 }
 
