@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
-declare_id!("tkJqbNU3dk3eCwtT4EjSFisxza8JcuKSbDNbTZDQv76");
+declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
 const CONFIG_PREFIX: &str = "registry-config";
 
 #[program]
@@ -11,7 +11,7 @@ pub mod permissionless_verifiable_registry {
     pub fn init(ctx: Context<Init>, ix: InitIx) -> ProgramResult {
         let registry_config = &mut ctx.accounts.registry_config;
         registry_config.authority = *ctx.accounts.authority.key;
-        registry_config.entry_seed = ix.entry_seed;
+        registry_config.realm_seed = ix.realm_seed;
         Ok(())
     }
 
@@ -56,7 +56,7 @@ pub mod permissionless_verifiable_registry {
 #[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct InitIx {
     pub bump: u8,
-    pub entry_seed: String,
+    pub realm_seed: String,
     pub permissionless_add: bool,
 }
 
@@ -105,10 +105,10 @@ pub struct AddEntry<'info> {
         payer = creator,
         // extra space for future upgrades
         space = 1024,
-        seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()],
+        seeds = [registry_config.realm_seed.as_ref(), ix.address.as_ref()],
         bump = ix.bump,
     )]
-    pub entry: ProgramAccount<'info, EntryData>,
+    pub entry: ProgramAccount<'info, RealmData>,
     #[account(constraint = registry_config.permissionless_add || (registry_config.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -119,7 +119,7 @@ pub struct VerifyEntry<'info> {
     #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: ProgramAccount<'info, EntryData>,
+    pub entry: ProgramAccount<'info, RealmData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
@@ -129,7 +129,7 @@ pub struct UnverifyEntry<'info> {
     #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: ProgramAccount<'info, EntryData>,
+    pub entry: ProgramAccount<'info, RealmData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
@@ -139,7 +139,7 @@ pub struct RemoveEntry<'info> {
     #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: ProgramAccount<'info, EntryData>,
+    pub entry: ProgramAccount<'info, RealmData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
@@ -151,18 +151,17 @@ pub struct RemoveEntry<'info> {
 pub struct RegistryConfig{
     pub bump: u8,
     pub authority: Pubkey,
-    pub entry_seed: String,
+    pub realm_seed: String,
     pub permissionless_add: bool,
 }
 
 #[account]
-pub struct EntryData {
+pub struct RealmData {
     pub address: Pubkey,
     pub creator: Pubkey,
     pub created_at: i64,
     pub is_verified: bool,
     pub verified_at: i64,
-    pub schema_version: u8,
     // schema below
     pub symbol: string,
     pub name: string,
@@ -170,7 +169,7 @@ pub struct EntryData {
     pub program_id: Pubkey,
     pub program_version: u8,
     pub keywords: Vec<string>
-    pub attributes: String,}
+    pub attributes: Vec<Vec<string>>,}
 
 ///////////////// ERRORS /////////////////
 
