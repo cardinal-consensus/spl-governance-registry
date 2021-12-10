@@ -87,9 +87,8 @@ pub struct Init<'info> {
 
 #[derive(Accounts)]
 pub struct TransferAuthority<'info> {
-    // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_config: Account<'info, RegistryConfig>,
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
     pub new_authority: Signer<'info>,

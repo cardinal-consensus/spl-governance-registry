@@ -89,7 +89,7 @@ pub struct Init<'info> {
 pub struct TransferAuthority<'info> {
     // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
     #[account(mut)]
-    pub registry_config: Account<'info, RegistryConfig>,
+    pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
     pub new_authority: Signer<'info>,
@@ -108,7 +108,7 @@ pub struct AddEntry<'info> {
         seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()],
         bump = ix.bump,
     )]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.permissionless_add || (registry_config.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -116,30 +116,30 @@ pub struct AddEntry<'info> {
 
 #[derive(Accounts)]
 pub struct VerifyEntry<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), entry.key().as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct UnverifyEntry<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), entry.key().as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct RemoveEntry<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), entry.key().as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
@@ -149,6 +149,7 @@ pub struct RemoveEntry<'info> {
 #[account]
 #[derive(Default)]
 pub struct RegistryConfig{
+    pub bump: u8,
     pub authority: Pubkey,
     pub entry_seed: String,
     pub permissionless_add: bool,
