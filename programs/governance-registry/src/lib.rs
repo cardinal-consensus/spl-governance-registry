@@ -5,7 +5,7 @@ declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
 const CONFIG_PREFIX: &str = "registry-config";
 
 #[program]
-pub mod permissionless_verifiable_registry {
+pub mod governance_registry {
     use super::*;
 
     pub fn init(ctx: Context<Init>, ix: InitIx) -> ProgramResult {
@@ -42,6 +42,7 @@ pub mod permissionless_verifiable_registry {
     pub fn unverify_entry(ctx: Context<UnverifyEntry>) -> ProgramResult {
         let entry = &mut ctx.accounts.entry;
         entry.is_verified = false;
+        entry.verified_at = None;
         Ok(())
     }
 
@@ -148,7 +149,7 @@ pub struct RemoveEntry<'info> {
 
 #[account]
 #[derive(Default)]
-pub struct RegistryConfig{
+pub struct RegistryConfig {
     pub bump: u8,
     pub authority: Pubkey,
     pub realm_seed: String,
