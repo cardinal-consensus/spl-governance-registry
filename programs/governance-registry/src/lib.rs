@@ -1,7 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
-declare_id!("govHvVVCZsdJLynaFJdqEWBU9AbJ4aHYdZsWno114V9");
+declare_id!("tkJqbNU3dk3eCwtT4EjSFisxza8JcuKSbDNbTZDQv76");
+const CONFIG_PREFIX: &str = "registry-config";
 
 #[program]
 pub mod permissionless_verifiable_registry {
@@ -77,7 +78,7 @@ pub struct Init<'info> {
         payer = authority,
         // extra space for future upgrades
         space = 128,
-        seeds = [b"registry-config".as_ref()],
+        seeds = [CONFIG_PREFIX.as_ref()],
         bump = ix.bump,
     )]
     pub registry_config: Account<'info, RegistryConfig>,
@@ -87,7 +88,7 @@ pub struct Init<'info> {
 
 #[derive(Accounts)]
 pub struct TransferAuthority<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
@@ -97,7 +98,7 @@ pub struct TransferAuthority<'info> {
 #[derive(Accounts)]
 #[instruction(ix: AddEntryIx)]
 pub struct AddEntry<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(
         init,
@@ -107,7 +108,7 @@ pub struct AddEntry<'info> {
         seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()],
         bump = ix.bump,
     )]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.permissionless_add || (registry_config.authority == *creator.to_account_info().key) @ ErrorCode::InsufficientAuthority)]
     pub creator: Signer<'info>,
     pub system_program: Program<'info, System>,
@@ -115,30 +116,30 @@ pub struct AddEntry<'info> {
 
 #[derive(Accounts)]
 pub struct VerifyEntry<'info> {
-    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()], bump = registry_config.bump)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct UnverifyEntry<'info> {
-    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()], bump = registry_config.bump)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
 
 #[derive(Accounts)]
 pub struct RemoveEntry<'info> {
-    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), ix.address.as_ref()], bump = registry_config.bump)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
-    pub entry: Account<'info, EntryData>,
+    pub entry: ProgramAccount<'info, EntryData>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key || entry.creator == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
 }
@@ -148,7 +149,7 @@ pub struct RemoveEntry<'info> {
 #[account]
 #[derive(Default)]
 pub struct RegistryConfig{
-    pub bump u8,
+    pub bump: u8,
     pub authority: Pubkey,
     pub entry_seed: String,
     pub permissionless_add: bool,
@@ -156,12 +157,12 @@ pub struct RegistryConfig{
 
 #[account]
 pub struct EntryData {
-    pub bump u8,
     pub address: Pubkey,
     pub creator: Pubkey,
     pub created_at: i64,
     pub is_verified: bool,
     pub verified_at: i64,
+    pub schema_version: u8,
     // schema below
     pub symbol: string,
     pub name: string,
@@ -169,8 +170,7 @@ pub struct EntryData {
     pub program_id: Pubkey,
     pub program_version: u8,
     pub keywords: Vec<string>
-    pub attributes: String,
-}
+    pub attributes: String,}
 
 ///////////////// ERRORS /////////////////
 

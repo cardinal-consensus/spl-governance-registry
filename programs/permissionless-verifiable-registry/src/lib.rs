@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_lang::AccountsClose;
 
 declare_id!("tkJqbNU3dk3eCwtT4EjSFisxza8JcuKSbDNbTZDQv76");
+const CONFIG_PREFIX: &str = "registry-config";
 
 #[program]
 pub mod permissionless_verifiable_registry {
@@ -77,7 +78,7 @@ pub struct Init<'info> {
         payer = authority,
         // extra space for future upgrades
         space = 128,
-        seeds = [b"registry-config".as_ref()],
+        seeds = [CONFIG_PREFIX.as_ref()],
         bump = ix.bump,
     )]
     pub registry_config: Account<'info, RegistryConfig>,
@@ -87,8 +88,7 @@ pub struct Init<'info> {
 
 #[derive(Accounts)]
 pub struct TransferAuthority<'info> {
-    // TODO constraint this is the singleton registry context address? Maybe we can rely on account discriminator + owner check
-    #[account(mut)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(constraint = registry_config.authority == *authority.to_account_info().key @ ErrorCode::InsufficientAuthority)]
     pub authority: Signer<'info>,
@@ -98,7 +98,7 @@ pub struct TransferAuthority<'info> {
 #[derive(Accounts)]
 #[instruction(ix: AddEntryIx)]
 pub struct AddEntry<'info> {
-    #[account(mut)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(
         init,
@@ -116,7 +116,7 @@ pub struct AddEntry<'info> {
 
 #[derive(Accounts)]
 pub struct VerifyEntry<'info> {
-    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), entry.key().as_ref()], bump = registry_config.bump)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: ProgramAccount<'info, EntryData>,
@@ -126,7 +126,7 @@ pub struct VerifyEntry<'info> {
 
 #[derive(Accounts)]
 pub struct UnverifyEntry<'info> {
-    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), entry.key().as_ref()], bump = registry_config.bump)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: ProgramAccount<'info, EntryData>,
@@ -136,7 +136,7 @@ pub struct UnverifyEntry<'info> {
 
 #[derive(Accounts)]
 pub struct RemoveEntry<'info> {
-    #[account(mut, seeds = [registry_config.entry_seed.as_ref(), entry.key().as_ref()], bump = registry_config.bump)]
+    #[account(mut, seeds = [CONFIG_PREFIX.as_ref()], bump = registry_config.bump)]
     pub registry_config: ProgramAccount<'info, RegistryConfig>,
     #[account(mut)]
     pub entry: ProgramAccount<'info, EntryData>,
