@@ -35,7 +35,7 @@ pub mod governance_registry {
     pub fn verify_entry(ctx: Context<VerifyEntry>) -> ProgramResult {
         let entry = &mut ctx.accounts.entry;
         entry.is_verified = true;
-        entry.verified_at = Clock::get().unwrap().unix_timestamp;
+        entry.verified_at = Some(Clock::get().unwrap().unix_timestamp);
         Ok(())
     }
 
@@ -162,7 +162,7 @@ pub struct Entry {
     pub creator: Pubkey,
     pub created_at: i64,
     pub is_verified: bool,
-    pub verified_at: i64,
+    pub verified_at: Option<i64>,
     pub schema_version: u8,
     pub data: Realm,
 }
@@ -172,10 +172,10 @@ pub struct Realm {
     pub name: String,
     pub description: String,
     pub symbol: String,
-    pub website: String
+    pub website: String,
     pub program_id: Pubkey,
     pub program_version: u8,
-    pub keywords: Vec<String>
+    pub keywords: Vec<String>,
     pub attributes: Vec<Vec<String>>,
 }
 
